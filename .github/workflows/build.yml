@@ -16,13 +16,21 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Unzip Project Files
+      - name: Unzip and Move Files
         run: |
           unzip PrivacyScreen.zip
+          # If the zip created a subfolder, bring everything out to the main space
           if [ -d "PrivacyScreen" ]; then
-            mv PrivacyScreen/* .
+            mv PrivacyScreen/* . 2>/dev/null || true
             mv PrivacyScreen/.* . 2>/dev/null || true
-            rm -rf PrivacyScreen
+          fi
+          # Double check if files are nested deeper and find gradlew
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ ! -z "$GRADLEW_PATH" ]; then
+            DIR_PATH=$(dirname "$GRADLEW_PATH")
+            echo "Found gradlew in $DIR_PATH, moving contents..."
+            mv $DIR_PATH/* . 2>/dev/null || true
+            mv $DIR_PATH/.* . 2>/dev/null || true
           fi
 
       - name: Make Gradle Executable
@@ -35,4 +43,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: privacy-screen-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: "**/build/outputs/apk/debug/app-debug.apk"
